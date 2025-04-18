@@ -1,0 +1,15 @@
+xlrd
+pandas
+numpy<2.0
+
+## Agent Workflow and Pipeline
+langgraph
+langsmith
+langchain-core
+langchain-openai
+langchain-ollama
+langchain-community
+
+## Vectors
+chromadb 
+sentence-transformers
