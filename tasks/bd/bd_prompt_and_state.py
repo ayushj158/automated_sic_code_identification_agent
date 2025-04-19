@@ -4,30 +4,33 @@ from operator import add
 from typing import List, Optional, Literal, Annotated
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
+from pydantic import BaseModel, Field
+from typing import List
+from search.search_states import SICCandidate
+from embeddings.scripts.embedding_models import EmbeddingType
+
+
+class SICPredictionOutput(BaseModel):
+    search_query: str = Field(description="search query passed in input")
+    cleansed_query: str = Field(description="output when input query is cleansed to reduce noise using LLM")
+    search_vector: Annotated[str, Field(description="embeddings that will be used for this search")] = EmbeddingType.values()
+
+    final_score_ranked: bool = Field(
+        description="Indicates if results are ranked by final score",
+        default=True
+    )
+    candidates: List[SICCandidate] = Field(
+        description="List of potential SIC code matches",
+        min_items=1
+    )
+   
 
 class CleansedQueryOutput(BaseModel):
     cleansed_query: str = Field(description="cleansed query based on prompt and LLM output")
 
-class SearchResult(BaseModel):
-    similarily_score: float = Field(description='similarity score of search result')
-    sic_code: int 
-    sic_code_description: str
-    section_name: str
-    section_description: str
-
-class SearchMetadata(BaseModel):
-    embedding_model_used: str =  Field(default=None, description="model name name for embeddings")
-    search_metric: Literal["Cosine", "L2_Distance"] = Field(default=None, description="search metric used for similarity scoring")
-    search_type: Literal["Semantic","Keyword","LLM_Search"] = Field(default=None, description="Type of search performed")
-
-class SearchOutput(BaseModel):
-    search_query: str = Field(description="search query")
-    cleansed_query: str = Field(description="refined query to reduce noise using LLM")
-    search_metadata: SearchMetadata
-    results: Annotated[List[SearchResult], add]
 
 
-def sanitise_business_description_prompt(query):
+def cleanse_business_description_prompt(query):
     parser = PydanticOutputParser(pydantic_object=CleansedQueryOutput)
 
     system_message = """You are an expert in business classification and taxonomy. Your goal is to extract the core economic activity from a customer’s company description. 
