@@ -4,7 +4,7 @@ from pathlib import Path
 directory = Path(__file__).resolve()
 sys.path.append(str(directory.parent.parent.parent))
 
-from tasks.bd.bd_prompt_and_state import (
+from tasks.business_description.bd_prompt_and_state import (
     cleanse_business_description_prompt,
     CleansedQueryOutput,
     SICPredictionOutput,
@@ -54,6 +54,7 @@ def evaluated_bd(business_description, top_k):
         model_name=ModelName.MINILM.value,
         top_k=top_k,
     )
+    primary_candidates.sort(key=lambda x: x.score, reverse=True)
 
     if is_results_qualitative(primary_candidates):
         return SICPredictionOutput(
@@ -71,7 +72,8 @@ def evaluated_bd(business_description, top_k):
         model_name=ModelName.MINILM.value,
         top_k=top_k,
     )
-
+    
+    secondary_candidates.sort(key=lambda x: x.score, reverse=True)
     if is_results_qualitative(secondary_candidates):
         return SICPredictionOutput(
             search_query=business_description,

@@ -5,9 +5,7 @@ from typing import List, Optional, Literal, Annotated
 
 class SICCandidate(BaseModel):
     score: float = Field(
-        description="Similarity score between 0 and 1",
-        ge=0.0,
-        le=1.0
+        description="Similarity score between 0 and 1"
     )
     sic_code: int 
     sic_code_description: str

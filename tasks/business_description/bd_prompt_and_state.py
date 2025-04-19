@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, Field
 from operator import add
 from typing import List, Optional, Literal, Annotated
@@ -12,22 +11,25 @@ from embeddings.scripts.embedding_models import EmbeddingType
 
 class SICPredictionOutput(BaseModel):
     search_query: str = Field(description="search query passed in input")
-    cleansed_query: str = Field(description="output when input query is cleansed to reduce noise using LLM")
-    search_vector: Annotated[str, Field(description="embeddings that will be used for this search")] = EmbeddingType.values()
+    cleansed_query: str = Field(
+        description="output when input query is cleansed to reduce noise using LLM"
+    )
+    search_vector: Annotated[
+        str, Field(description="embeddings that will be used for this search")
+    ] = EmbeddingType.values()
 
     final_score_ranked: bool = Field(
-        description="Indicates if results are ranked by final score",
-        default=True
+        description="Indicates if results are ranked by final score", default=True
     )
     candidates: List[SICCandidate] = Field(
-        description="List of potential SIC code matches",
-        min_items=1
+        description="List of potential SIC code matches", min_items=1
     )
-   
+
 
 class CleansedQueryOutput(BaseModel):
-    cleansed_query: str = Field(description="cleansed query based on prompt and LLM output")
-
+    cleansed_query: str = Field(
+        description="cleansed query based on prompt and LLM output"
+    )
 
 
 def cleanse_business_description_prompt(query):
@@ -53,12 +55,13 @@ def cleanse_business_description_prompt(query):
 
     #                     Respond **only in JSON** and follow this format strictly:
     #                     {format_instructions} """
-    
-    prompt_template = ChatPromptTemplate.from_messages([
-        ("system", system_message),
-        ("human", "Description: {query}")
-    ])
-    
-    tempalte= prompt_template.partial(format_instructions=parser.get_format_instructions())
+
+    prompt_template = ChatPromptTemplate.from_messages(
+        [("system", system_message), ("human", "Description: {query}")]
+    )
+
+    tempalte = prompt_template.partial(
+        format_instructions=parser.get_format_instructions()
+    )
 
     return tempalte.format_messages(query=query)

@@ -43,17 +43,26 @@ def calculate_score(chroma_score, score_type):
     else:
         return 1 - 0.5 * (chroma_score**2)
 
-def generate_rationale(score):
+def generate_rationale(score, strategy):
+    prefix = ''
+    if strategy == EmbeddingType.SIC_ONLY.value:
+        prefix = 'with SIC Code Descriptions'
+    elif strategy == EmbeddingType.SIC_AND_SECTION.value:
+         prefix = 'with combined search on SIC Code Descriptions and Section Descriptions'
+    else: 
+        prefix = ''
+
     if score >= 0.75:
-        reason = "High semantic similarity with SIC description"
+        reason = f"High semantic similarity {prefix} with SIC description"
     elif score >= 0.5:
-        reason = "Moderate semantic similarity, partial concept match"
+        reason = f"Moderate semantic similarity {prefix}, partial concept match"
     else:
-        reason = "Weak match, low confidence – review suggested"
+        reason = f"Weak semantic similarity {prefix}, Low Confidence: Review Suggested"
     
     return reason
 
-def compose_output(original_query, results, model_name, search_metric, search_type):
+def compose_output(original_query, results, model_name, 
+                   search_metric, search_type, strategy):
     structured_results = []
 
     for doc, meta, score in zip(results["documents"][0], results["metadatas"][0], results["distances"][0]):
@@ -66,7 +75,7 @@ def compose_output(original_query, results, model_name, search_metric, search_ty
                 sic_code_description=doc,
                 section_name=meta.get("Section Name", ""),
                 section_description=meta.get("Section Description", ""),
-                rationale=generate_rationale(sim_score)
+                rationale=generate_rationale(sim_score, strategy)
             )
         )
     meatadata = SearchMetadata(
@@ -83,16 +92,15 @@ def compose_output(original_query, results, model_name, search_metric, search_ty
 
     return output
 
-
 def semantic_search(strategy=EmbeddingType.SIC_ONLY.value, query="", model_name=ModelName.MINILM.value, top_k=5):
     if model_name not in embedding_models:
         raise ValueError(
             f"Model {model_name} not found. Available models: {list(embedding_models.keys())}"
         )
     
-    print(f"Using model: {model_name}")
 
     if strategy == EmbeddingType.SIC_AND_SECTION.value:
+        print(f"Using model: {model_name} and Strategy:{strategy}")
         results = run_sic_and_section_semantic_search(query, model_name, top_k)
         return compose_output(
             results=results,
@@ -100,16 +108,10 @@ def semantic_search(strategy=EmbeddingType.SIC_ONLY.value, query="", model_name=
             original_query=query,
             search_metric="Cosine",
             search_type="Semantic",
+            strategy=strategy
         )
-    elif strategy == "sic_and_section_and_keyword":
-        return compose_output(
-            results=results,
-            model_name=model_name,
-            original_query=query,
-            search_metric="Cosine",
-            search_type="Keyword",
-        )
-    else:
+    elif strategy == EmbeddingType.SIC_ONLY.value:
+        print(f"Using model: {model_name} and Strategy:{strategy}")
         results = run_sic_only_semantic_search(query, model_name, top_k)
         return compose_output(
             results=results,
@@ -117,4 +119,9 @@ def semantic_search(strategy=EmbeddingType.SIC_ONLY.value, query="", model_name=
             original_query=query,
             search_metric="Cosine",
             search_type="Semantic",
+            strategy=strategy
+        )
+    else:
+        raise ValueError(
+            f"Strategy {strategy} not found. Available strategies: {EmbeddingType.values()}"
         )
