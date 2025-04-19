@@ -45,6 +45,30 @@ def is_results_qualitative(candidates):
         return any(candidate.score >= minimum_threshold for candidate in candidates)
 
 def evaluated_bd(business_description, top_k):
+    """
+    Evaluates a business description to find the most relevant SIC codes using a two-step search strategy.
+    This function performs semantic search using two different strategies (primary and secondary) to find
+    relevant SIC codes for a given business description. It first attempts a primary search, and if the
+    results are not qualitative enough, proceeds with a secondary search. If needed, it merges results
+    from both searches.
+    Args:
+        business_description (str): The raw business description text to be evaluated
+        top_k (int): The number of top candidates to return
+    Returns:
+        SICPredictionOutput: An object containing:
+            - search_query: Original business description
+            - cleansed_query: Cleaned version of business description
+            - candidates: List of candidate SIC codes with their scores
+            - search_vector: Description of search strategy used
+            - final_score_ranked: Boolean indicating if results are ranked by final score
+    Flow:
+        1. Cleanses the input business description
+        2. Performs primary search
+        3. If primary results are qualitative, returns those
+        4. Otherwise, performs secondary search
+        5. If secondary results are qualitative, returns those
+        6. If neither is satisfactory, merges results (60% primary, 40% secondary)
+    """
     cleansed_query = clean_query_using_llm(business_description)
 
     # Primary search
